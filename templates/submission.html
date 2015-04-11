@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mikhail's Blog</title>
+</head>
+<style type="text/css">
+    body {
+        font-family: sans-serif;
+        background-color: gray;
+        width: 800;
+        margin: 0 auto;
+        padding: 10px;
+    }
+    .error {
+        color: red;
+    }
+    label {
+        display: block;
+        font-size: 20px;
+    }
+    hr {
+        margin : 20px auto;
+    }
+    .blog + .blog {
+        margin-top: 20px;
+    }
+    .blog-subject {
+        font-weight: bold;
+        font-size: 20px;
+    }
+    .blog-body {
+        margin: 0;
+        font-size: 17px;
+    }
+</style>
+
+<body>
+<h1 align="center"><a href= "/blog">Welcome to Mikhail's Blog</a></h1>
+<hr>
+
+    <div class="blog">
+        <div class= "blog-subject">{{subject}}</div>
+        <div class= "blog-body">{{content}}</div>
+    </div>
+    <br>
+    <a href="/blog">Return to blog</a>
+</body>
+</html>

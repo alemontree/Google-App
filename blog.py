@@ -2,6 +2,7 @@ import os
 import webapp2
 import jinja2
 from hello import *
+from validation import valid_username, valid_password, valid_email
 #import re
 
 from google.appengine.ext import db
@@ -10,7 +11,6 @@ from google.appengine.ext import db
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
                                 autoescape = True)
-
 
 
 class Handler(webapp2.RequestHandler):
@@ -27,7 +27,33 @@ class Handler(webapp2.RequestHandler):
 
 class MainPage(Handler):
     def get(self):
-        self.write("MainPage!")
+        self.render("hello.html")
+
+
+class Rot13(Handler):
+
+    def render_rot13(self, text_content = ""):
+        self.render("rot13.html", text_content = text_content)
+    def get(self):
+        self.render_rot13()
+    def post(self):
+        text = self.request.get("text")
+        text_rot13 = self.encode_rot13(text)
+        self.render_rot13(text_rot13)
+
+    def encode_rot13(self, s):
+        esc_str_flag = 0
+        res = []
+        for c in s:
+            if c == "&" and esc_str_flag == 0:
+                esc_str_flag = 1                
+            if esc_str_flag == 1 and c == ";":
+                esc_str_flag = 0                
+            if esc_str_flag == 0:
+                res.append(c.encode('rot13'))
+            else:
+                res.append(c)
+        return "".join(res)
 
 class Content(db.Model):
     subject = db.StringProperty(required = True)
@@ -73,6 +99,55 @@ class Submission(Handler):
         subject = blogpost.subject
         content = blogpost.content      
         self.render("submission.html", subject=subject, content=content)
+
+
+class Signup(Handler):
+    errors = {'email_er' : "",
+    'name_er' : "",
+    'password_er' : "",
+    'verify_pw_er' : ""
+    }
+
+    def render_signup(self, username="", email=""):
+        self.render("forms_signup.html", username=username, email=email, **errors) 
+    
+    def get(self):
+        self.render_signup() 
+        for key in errors:
+            errors[key] = ""
+
+    def post(self):
+        user_name = self.request.get("username")
+        user_pw = self.request.get("password")
+        user_verifypw = self.request.get("verify")
+        user_email = self.request.get("email")
+
+
+        flag = True
+        if not valid_username(user_name):
+            errors['name_er'] = "That's not a valid username."
+            flag = False
+        if user_email and not valid_email(user_email):
+            errors['email_er'] = "That's not a valid email."
+            flag = False
+        if not valid_password(user_pw):
+            errors['password_er'] = "That wasn't a valid password."
+            flag = False
+        if not user_pw == user_verifypw:
+            errors['verify_pw_er'] = "Your passwords didn't match."
+            flag = False
+        
+        if flag:
+            self.redirect("/thanks?name=" + user_name)
+        else:
+            self.render_signup(username=user_name, email=user_email)
+
+
+
+class Thankshandler(webapp2.RequestHandler):
+    def get(self):
+        name = self.request.get("name")
+        self.response.out.write("Welcome, {}!".format(name))
     
 
 

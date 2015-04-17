@@ -12,6 +12,9 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
                                 autoescape = True)
 
+def render_str(template, **params):
+    t = jinja_env.get_template(template)
+    return t.render(params)
 
 class Handler(webapp2.RequestHandler):
     def write(self, *a, **kw):
@@ -23,6 +26,10 @@ class Handler(webapp2.RequestHandler):
 
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
+
+# def render_post(response, post):
+#     response.out.write('<b>' + post.subject + '</b><br>')
+#     response.out.write(post.content)
 
 
 class MainPage(Handler):
@@ -55,19 +62,24 @@ class Rot13(Handler):
                 res.append(c)
         return "".join(res)
 
+# blog
 class Content(db.Model):
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
+    last_modified = db.DateTimeProperty(auto_now = True)
+
+    # def render(self):
+    #     self._render_text = self.content.replace('\n', '<br>')
+    #     return render_str("submission.html", p = self)
 
 class Blog(Handler):
     def render_blog(self):
-        blogposts = db.GqlQuery("SELECT * FROM Content ORDER BY created DESC")
+        blogposts = db.GqlQuery("SELECT * FROM Content ORDER BY created DESC limit 10")
         self.render("blog.html", blogposts = blogposts)
 
     def get(self):
         self.render_blog()
-
 
 class Newpost(Handler):
     def render_form(self, subject="", content="", error=""):
@@ -87,19 +99,20 @@ class Newpost(Handler):
             key_id = blog_posts.key().id()
             print "\nTHIS IS THE ID: ", key_id
             print type(key_id)
-            #self.write("Thanks!")
             self.redirect("/blog/"+str(key_id))
         else:
             error = "We need both a subject and content!"
-            self.render_form(subject, content, error = error)
+            self.render_form(subject=subject, content=content, error = error)
         
 class Submission(Handler):
     def get(self, product_id):  
         blogpost = Content.get_by_id(int(product_id))
         subject = blogpost.subject
-        content = blogpost.content      
-        self.render("submission.html", subject=subject, content=content)
+        content = blogpost.content
+        date = blogpost.created.strftime("%b %d, %Y")      
+        self.render("submission.html", subject=subject, content=content, date=date)
 
+# blog stuff ends here
 
 class Signup(Handler):
     errors = {'email_er' : "",
